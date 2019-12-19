@@ -5,4 +5,4 @@ services:
     image: continuumio/anaconda3
     volumes:
       - ./:/home/Hexmap
-    command: sh -c "conda install setuptools && conda list && python3 /home/Hexmap/setup.py bdist_wheel && cd /home/Hexmap && ls -la"
+    command: sh -c "ls -la && conda install setuptools && conda list && python3 /home/Hexmap/setup.py bdist_wheel && cd /home/Hexmap && ls -la"

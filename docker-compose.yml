@@ -3,7 +3,7 @@ version:  '3'
 services:
   anaconda:
     image: continuumio/anaconda3
-    #volumes:
-      #- ../Hexmap:/home/Hexma
-    #command: sh -c "cd /home/Hexmap && ls -la"
+    volumes:
+      - ./:/home/Hexmap
+    command: sh -c "cd /home/Hexmap && ls -la"
     #command: sh -c "conda install setuptools && conda list && python3 /home/Hexmap/setup.py bdist_wheel && cd home/Hexmap && ls -la"

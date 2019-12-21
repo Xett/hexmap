@@ -4,10 +4,10 @@ import numpy as np
 import math
 import copy
 from collections import OrderedDict
-import Iterators
-from Coords import Cube
-from Coords import Axial
-from Maps import RadialMap
+from hexmap import Iterators
+from hexmap.Coords import Cube
+from hexmap.Coords import Axial
+from hexmap.Maps import RadialMap
 def pixel_to_hex(point,zoom):
     q=((2./3)*point[0])/zoom
     r=(((-1./3)*point[0])+(np.sqrt(3)/3)*point[1])/zoom

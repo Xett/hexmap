@@ -1,6 +1,6 @@
-import Iterators
-from Coords import Cube
-from Coords import Axial
+from hexmap import Iterators
+from hexmap.Coords import Cube
+from hexmap.Coords import Axial
 class Tile:
     def __init__(self,x,y,z):
         self.x=x

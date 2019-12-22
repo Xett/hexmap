@@ -30,6 +30,83 @@ class Observable:
         return self.data
     def unset(self):
         self.data = None
+class HexmapBitmap:
+    def __init__(self,parent):
+        self.parent=parent
+    @property
+    def width(self):
+        return self.parent.GetSize()[0]
+    @property
+    def height(self):
+        return self.parent.GetSize()[1]
+    @property
+    def size(self):
+        return self.parent.GetSize()
+    @property
+    def x(self):
+        return 0
+    @property
+    def y(self):
+        return 0
+    @property
+    def center_x(self):
+        return self.size[0]/2
+    @property
+    def center_y(self):
+        return self.size[1]/2
+    def OnSize(self):
+        self.image=wx.Bitmap(self.size)
+        self.DrawHexmap()
+    def DrawHexmap(self):
+        dc=wx.MemoryDC()
+        dc.SelectObject(self.image)
+        dc.Clear()
+        height=(100)*np.sqrt(3)
+        width=(100)*2
+        center_x,center_y=(self.parent.GetSize())/2
+        for x,y,z in Iterators.RingIterator(self.parent.hexmap.radius,6):
+            x_coord=x*((width/4)*3)
+            y_coord=(y*(height/2))-(z*(height/2))
+            h=[(vert[0]+x_coord+center_x+self.parent.offset_coord[0],
+                vert[1]-y_coord+center_y+self.parent.offset_coord[1]) for vert in self.parent.hexagon]
+            tile=self.parent.hexmap[Cube(x,y,z)]
+            dc.SetBrush(wx.Brush(wx.Colour(255,255,255)))
+            if (x,y,z)==(self.parent.hovered_tile.x,self.parent.hovered_tile.y,self.parent.hovered_tile.z):
+                dc.SetBrush(wx.Brush(wx.Colour(0,255,255)))
+            elif (x,y,z)==(self.parent.selected_tile.x,self.parent.selected_tile.y,self.parent.selected_tile.z):
+                dc.SetBrush(wx.Brush(wx.Colour(0,0,255)))
+            elif tile!=False:
+                if tile.isPassable==False:
+                    dc.SetBrush(self.parent.brushes['not_passable_tile'])
+                elif tile.movement_cost==1:
+                    dc.SetBrush(self.parent.brushes['movement_cost_1_tile'])
+                elif tile.movement_cost==2:
+                    dc.SetBrush(self.parent.brushes['movement_cost_2_tile'])
+            dc.SetPen(self.parent.pens['hex_outline'])
+            dc.DrawPolygon(h)
+            text_sizes={
+                'X':dc.GetTextExtent(str(x)),
+                'Y':dc.GetTextExtent(str(y)),
+                'Z':dc.GetTextExtent(str(z))
+            }
+            if self.parent.notation_type=='Cube':
+                cubic_coordinates={
+                    'X':(x_coord+center_x+self.parent.offset_coord[0]-(text_sizes['X'][0]/2),-y_coord+center_y+self.parent.offset_coord[1]-(height/3)),
+                    'Y':(x_coord+center_x+self.parent.offset_coord[0]-(width/4),-y_coord+center_y+self.parent.offset_coord[1]+(height/4)-text_sizes['Y'][1]),
+                    'Z':(x_coord+center_x+self.parent.offset_coord[0]+(width/4)-text_sizes['Z'][0],-y_coord+center_y+self.parent.offset_coord[1]+(height/4)-text_sizes['Z'][1])
+                }
+                for coord,axis in zip([x,y,z],['X','Y','Z']):
+                    dc.SetTextForeground(self.parent.text_colours[axis])
+                    dc.DrawText(str(coord),cubic_coordinates[axis][0],cubic_coordinates[axis][1])
+            elif self.parent.notation_type=='Axial':
+                axial_coordinates={
+                    'X':(x_coord+center_x+self.parent.offset_coord[0]-(width/4),-y_coord+center_y+self.parent.offset_coord[1]-(text_sizes['X'][1]/2)),
+                    'Y':(x_coord+center_x+self.parent.offset_coord[0]+(width/4)-text_sizes['Y'][0],-y_coord+center_y+self.parent.offset_coord[1]-(text_sizes['Y'][1]/2))
+                }
+                dc.DrawText(str(x),axial_coordinates['X'][0],axial_coordinates['X'][1])
+                dc.DrawText(str(y),axial_coordinates['Y'][0],axial_coordinates['Y'][1])
+    def Draw(self,dc):
+        dc.DrawBitmap(self.image,self.x,self.y)
 class AxisBitmap:
     def __init__(self,parent):
         self.parent=parent
@@ -170,6 +247,7 @@ class RenderPanel(wx.Panel):
             'movement_cost_1_tile':wx.Brush(wx.Colour(255,255,255)),
             'movement_cost_2_tile':wx.Brush(wx.Colour(139,69,19))
         }
+        self.hexmap_bitmap=HexmapBitmap(self)
         self.axis_bitmap=AxisBitmap(self)
         self.Show(True)
     def init(self,hexmap,lock):
@@ -190,6 +268,7 @@ class RenderPanel(wx.Panel):
         wx.BufferedPaintDC(self,self.buffer)
     def OnSize(self,event):
         self.buffer=wx.Bitmap(*self.GetSize())
+        self.hexmap_bitmap.OnSize()
         self.axis_bitmap.OnSize()
         self.UpdateDrawing()
     def Draw(self,dc):
@@ -197,50 +276,8 @@ class RenderPanel(wx.Panel):
         dc.SetBackground(self.brushes['background'])
         dc.Clear()
         self.lock.acquire()
-        height=(100)*np.sqrt(3)
-        width=(100)*2
-        center_x,center_y=(self.GetSize())/2
-        for x,y,z in Iterators.RingIterator(self.hexmap.radius,6):
-            x_coord=x*((width/4)*3)
-            y_coord=(y*(height/2))-(z*(height/2))
-            h=[(vert[0]+x_coord+center_x+self.offset_coord[0],
-                vert[1]-y_coord+center_y+self.offset_coord[1]) for vert in self.hexagon]
-            tile=self.hexmap[Cube(x,y,z)]
-            dc.SetBrush(wx.Brush(wx.Colour(255,255,255)))
-            if (x,y,z)==(self.hovered_tile.x,self.hovered_tile.y,self.hovered_tile.z):
-                dc.SetBrush(wx.Brush(wx.Colour(0,255,255)))
-            elif (x,y,z)==(self.selected_tile.x,self.selected_tile.y,self.selected_tile.z):
-                dc.SetBrush(wx.Brush(wx.Colour(0,0,255)))
-            elif tile!=False:
-                if tile.isPassable==False:
-                    dc.SetBrush(self.brushes['not_passable_tile'])
-                elif tile.movement_cost==1:
-                    dc.SetBrush(self.brushes['movement_cost_1_tile'])
-                elif tile.movement_cost==2:
-                    dc.SetBrush(self.brushes['movement_cost_2_tile'])
-            dc.SetPen(self.pens['hex_outline'])
-            dc.DrawPolygon(h)
-            text_sizes={
-                'X':dc.GetTextExtent(str(x)),
-                'Y':dc.GetTextExtent(str(y)),
-                'Z':dc.GetTextExtent(str(z))
-            }
-            if self.notation_type=='Cube':
-                cubic_coordinates={
-                    'X':(x_coord+center_x+self.offset_coord[0]-(text_sizes['X'][0]/2),-y_coord+center_y+self.offset_coord[1]-(height/3)),
-                    'Y':(x_coord+center_x+self.offset_coord[0]-(width/4),-y_coord+center_y+self.offset_coord[1]+(height/4)-text_sizes['Y'][1]),
-                    'Z':(x_coord+center_x+self.offset_coord[0]+(width/4)-text_sizes['Z'][0],-y_coord+center_y+self.offset_coord[1]+(height/4)-text_sizes['Z'][1])
-                }
-                for coord,axis in zip([x,y,z],['X','Y','Z']):
-                    dc.SetTextForeground(self.text_colours[axis])
-                    dc.DrawText(str(coord),cubic_coordinates[axis][0],cubic_coordinates[axis][1])
-            elif self.notation_type=='Axial':
-                axial_coordinates={
-                    'X':(x_coord+center_x+self.offset_coord[0]-(width/4),-y_coord+center_y+self.offset_coord[1]-(text_sizes['X'][1]/2)),
-                    'Y':(x_coord+center_x+self.offset_coord[0]+(width/4)-text_sizes['Y'][0],-y_coord+center_y+self.offset_coord[1]-(text_sizes['Y'][1]/2))
-                }
-                dc.DrawText(str(x),axial_coordinates['X'][0],axial_coordinates['X'][1])
-                dc.DrawText(str(y),axial_coordinates['Y'][0],axial_coordinates['Y'][1])
+        self.hexmap_bitmap.DrawHexmap()
+        self.hexmap_bitmap.Draw(dc)
         self.axis_bitmap.Draw(dc)
         self.lock.release()
     def UpdateDrawing(self):

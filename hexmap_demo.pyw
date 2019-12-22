@@ -363,9 +363,13 @@ class MainFrame(wx.Frame):
         self.CreateStatusBar()
         self.hexmap_control_panel=HexMapControlPanel(self)
         self.render_panel=RenderPanel(self)
-        self.main_sizer=wx.BoxSizer()
-        self.main_sizer.Add(self.hexmap_control_panel,0,wx.EXPAND)
-        self.main_sizer.Add(self.render_panel,1,wx.EXPAND)
+        self.main_sizer=wx.BoxSizer(orient=wx.VERTICAL)
+        self.inner_sizer=wx.BoxSizer()
+        self.toolbar=wx.ToolBar(self)
+        self.main_sizer.Add(self.toolbar,0,wx.EXPAND)
+        self.main_sizer.Add(self.inner_sizer,1,wx.EXPAND)
+        self.inner_sizer.Add(self.hexmap_control_panel,0,wx.EXPAND)
+        self.inner_sizer.Add(self.render_panel,1,wx.EXPAND)
         self.SetSizer(self.main_sizer)
         self.Show(True)
     def init(self,hexmap,lock):
@@ -401,7 +405,7 @@ class App:
             self.main_frame.render_panel.UpdateDrawing()
     def SetRadius(self,event):
         self.radius=self.main_frame.hexmap_control_panel.radius_control.GetValue()
-        self.hexmap.reset(self.radius)
+        self.hexmap.populateMap(self.radius)
     #def SetZoom(self,event):
         #self.main_frame.render_panel.zoom=self.main_frame.hexmap_control_panel.zoom_control.GetValue()
     def SetSelectedTile(self,event):

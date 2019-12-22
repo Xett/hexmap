@@ -59,17 +59,41 @@ class HexMap:
             self.tiles[(key.toCube().x,key.toCube().z)]=item
         elif key.__class__.__name__=='EvenColumnAxial':
             self.tiles[(key.toCube().x,key.toCube().z)]=item
+    def __delitem__(self,key):
+        if key.__class__.__name__=='Cube':
+            del self.tiles[(key.x,key.z)]
+        elif key.__class__.__name__=='Axial':
+            del self.tiles[(key.q,key.r)]
+        elif key.__class__.__name__=='OddRowAxial':
+            del self.tiles[(key.toCube().x,key.toCube().z)]
+        elif key.__class__.__name__=='EvenRowAxial':
+            del self.tiles[(key.toCube().x,key.toCube().z)]
+        elif key.__class__.__name__=='OddColumnAxial':
+            del self.tiles[(key.toCube().x,key.toCube().z)]
+        elif key.__class__.__name__=='EvenColumnAxial':
+            del self.tiles[(key.toCube().x,key.toCube().z)]
     def addTile(self,x,y,z):
         tile=Tile(x,y,z)
         self[Cube(x,y,z)]=tile
+    @property
+    def length(self):
+        return len(self.tiles)
 class RadialMap(HexMap):
     def __init__(self,radius):
         super().__init__()
         self.radius=radius
-        self.populateMap()
-    def populateMap(self):
-        for x,y,z in Iterators.RingIterator(self.radius,6):
-            self.addTile(x,y,z)
-    def reset(self,radius):
+        self.populateMap(self.radius)
+    def populateMap(self,radius):
+        # add missing or delete unneeded
+        iterator=Iterators.RingIterator(radius,6)
+        if self.length>iterator.length:
+            # delete unneeded
+            for i,coords in enumerate(Iterators.RingIterator(radius+1,6)):
+                if i>iterator.length-1:
+                    del self[Cube(coords[0],coords[1],coords[2])]
+        else:
+            # add missing
+            iterator.index=self.length-1
+            for x,y,z in iterator:
+                self.addTile(x,y,z)
         self.radius=radius
-        self.populateMap()

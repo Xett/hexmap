@@ -1,5 +1,5 @@
 import wx
-import threading
+import multiprocessing as mp
 import numpy as np
 import math
 import copy
@@ -15,30 +15,62 @@ def pixel_to_hex(point):
     q=((2./3)*point[0])/100
     r=(((-1./3)*point[0])+(np.sqrt(3)/3)*point[1])/100
     return round(Axial(q,r).toCube())
-#class HexmapBitmap:
-#    def __init__(self,parent):
-#        self.parent=parent
-#    @property
-#    def width(self):
-#        return self.parent.GetSize()[0]
-#    @property
-#    def height(self):
-#        return self.parent.GetSize()[1]
-#    @property
-#    def size(self):
-#        return self.parent.GetSize()
-#    @property
-#    def x(self):
-#        return 0
-#    @property
-#    def y(self):
-#        return 0
-#    @property
-#    def center_x(self):
-#        return self.size[0]/2
-#    @property
-#    def center_y(self):
-#        return self.size[1]/2
+class BitmapOnSizeTask(Task):
+    def __init__(self,event):
+        Task.__init__(self,event)
+class BitmapOnSizeEvent(Event):
+    def __init__(self,onsize_event_name):
+        Event.__init__(self,onsize_event_name)
+class BitmapDrawTask(Task):
+    def __init__(self,event,drawfunc):
+        Task.__init__(self,event)
+class BitmapDrawEvent(Event):
+    def __init__(self,draw_event_name):
+        Event.__init__(self,draw_event_name)
+class Bitmap:
+    def __init__(self,parent,name,width=10,height=10,x=0,y=0):
+        self.parent=parent
+        self.events=self.parent.events
+        self.name=name
+        self.width=width
+        self.height=height
+        self.x=x
+        self.y=y
+        self.draw_event_name='{}-Draw-Event'
+        self.onsize_event_name='{}-OnSize-Event'
+        self.events.AddEvent(self.draw_event_name)
+        self.events.AddEvent(self.onsize_event_name)
+    @property
+    def size(self):
+        return (self.width,self.height)
+    @property
+    def center_x(self):
+        return self.size[0]/2
+    @property
+    def center_y(self):
+        return self.size[1]/2
+    def OnSize(self,event):
+        self.image=wx.Bitmap(self.size)
+    def Draw(self,event):
+        return
+class HexmapBitmap(Bitmap):
+    def __init__(self,parent):
+        Bitmap.__init__(self,parent,'Hexmap-Bitmap')
+    @property
+    def width(self):
+        return self.parent.GetSize()[0]
+    @property
+    def height(self):
+        return self.parent.GetSize()[1]
+    @property
+    def size(self):
+        return self.parent.GetSize()
+    @property
+    def x(self):
+        return 0
+    @property
+    def y(self):
+        return 0
 #    def OnSize(self):
 #        self.image=wx.Bitmap(self.size)
 #        self.DrawHexmap()
@@ -287,57 +319,43 @@ def pixel_to_hex(point):
 #        elif event.LeftUp():
 #            self.is_dragging=False
 #            self.is_left_click_down=False
-#class SelectedTileControlPanel(wx.Panel):
-#    def __init__(self,parent):
-#        wx.Panel.__init__(self,parent)
-#        self.parent=parent
-#        self.main_sizer=wx.BoxSizer(orient=wx.VERTICAL)
-#        self.selected_tile_label=wx.StaticText(self,label='Selected Tile')
-#        self.selected_tile_x_label=wx.StaticText(self,label='X:')
-#        self.selected_tile_x_control=wx.SpinCtrl(self,min=-100)
-#        self.selected_tile_y_label=wx.StaticText(self,label='Y:')
-#        self.selected_tile_y_control=wx.SpinCtrl(self,min=-100)
-#        self.selected_tile_z_label=wx.StaticText(self,label='Z:')
-#        self.selected_tile_z_control=wx.SpinCtrl(self,min=-100)
-#        self.selected_tile_coord_sizer=wx.BoxSizer()
-#        self.selected_tile_coord_sizer.Add(self.selected_tile_x_label,0,wx.EXPAND)
-#        self.selected_tile_coord_sizer.Add(self.selected_tile_x_control,0,wx.EXPAND)
-#        self.selected_tile_coord_sizer.Add(self.selected_tile_y_label,0,wx.EXPAND)
-#        self.selected_tile_coord_sizer.Add(self.selected_tile_y_control,0,wx.EXPAND)
-#        self.selected_tile_coord_sizer.Add(self.selected_tile_z_label,0,wx.EXPAND)
-#        self.selected_tile_coord_sizer.Add(self.selected_tile_z_control,0,wx.EXPAND)
-#        self.main_sizer.Add(self.selected_tile_label,0,wx.EXPAND)
-#        self.main_sizer.Add(self.selected_tile_coord_sizer,0,wx.EXPAND)
-#        self.selected_tile_type_control=wx.RadioBox(self,choices=['Movement Cost 1','Movement Cost 2','Not Passable'])
-#        self.main_sizer.Add(self.selected_tile_type_control,0,wx.EXPAND)
-#        self.SetSizer(self.main_sizer)
-#        self.Show(True)
+class SelectedTileControlPanel(Panel):
+    def __init__(self,parent):
+        Panel.__init__(self,parent,main_sizer_orientation=wx.VERTICAL)
+        self.selected_tile_label=wx.StaticText(self,label='Selected Tile')
+        self.selected_tile_x_label=wx.StaticText(self,label='X:')
+        self.selected_tile_x_control=wx.SpinCtrl(self,min=-100)
+        self.selected_tile_y_label=wx.StaticText(self,label='Y:')
+        self.selected_tile_y_control=wx.SpinCtrl(self,min=-100)
+        self.selected_tile_z_label=wx.StaticText(self,label='Z:')
+        self.selected_tile_z_control=wx.SpinCtrl(self,min=-100)
+        self.selected_tile_coord_sizer=wx.BoxSizer()
+        self.selected_tile_coord_sizer.Add(self.selected_tile_x_label,0,wx.EXPAND)
+        self.selected_tile_coord_sizer.Add(self.selected_tile_x_control,0,wx.EXPAND)
+        self.selected_tile_coord_sizer.Add(self.selected_tile_y_label,0,wx.EXPAND)
+        self.selected_tile_coord_sizer.Add(self.selected_tile_y_control,0,wx.EXPAND)
+        self.selected_tile_coord_sizer.Add(self.selected_tile_z_label,0,wx.EXPAND)
+        self.selected_tile_coord_sizer.Add(self.selected_tile_z_control,0,wx.EXPAND)
+        self.main_sizer.Add(self.selected_tile_label,0,wx.EXPAND)
+        self.main_sizer.Add(self.selected_tile_coord_sizer,0,wx.EXPAND)
+        self.selected_tile_type_control=wx.RadioBox(self,choices=['Movement Cost 1','Movement Cost 2','Not Passable'])
+        self.main_sizer.Add(self.selected_tile_type_control,0,wx.EXPAND)
 #    def init(self,hexmap,lock):
 #        self.hexmap=hexmap
 #        self.lock=lock
-#class HexMapControlPanel(wx.Panel):
-#    def __init__(self,parent):
-#        wx.Panel.__init__(self,parent)
-#        self.parent=parent
-#        self.main_sizer=wx.BoxSizer(orient=wx.VERTICAL)
-#        self.radius_label=wx.StaticText(self,label='Radius:')
-#        self.radius_control=wx.SpinCtrl(self,value='1')
-#        self.radius_sizer=wx.BoxSizer()
-#        self.radius_sizer.Add(self.radius_label,1,wx.EXPAND)
-#        self.radius_sizer.Add(self.radius_control,1,wx.EXPAND)
-#        self.main_sizer.Add(self.radius_sizer,0,wx.EXPAND)
-        #self.zoom_label=wx.StaticText(self,label='Zoom:')
-        #self.zoom_control=wx.SpinCtrl(self,value='1')
-        #self.zoom_sizer=wx.BoxSizer()
-        #self.zoom_sizer.Add(self.zoom_label,1,wx.EXPAND)
-        #self.zoom_sizer.Add(self.zoom_control,1,wx.EXPAND)
-        #self.main_sizer.Add(self.zoom_sizer,0,wx.EXPAND)
-#        self.notation_type_control=wx.RadioBox(self,choices=['None','Cube','Axial'])
-#        self.main_sizer.Add(self.notation_type_control,0,wx.EXPAND)
-#        self.selected_tile_control_panel=SelectedTileControlPanel(self)
-#        self.main_sizer.Add(self.selected_tile_control_panel,0,wx.EXPAND)
-#        self.SetSizer(self.main_sizer)
-#        self.Show(True)
+class HexMapControlPanel(Panel):
+    def __init__(self,parent):
+        Panel.__init__(self,parent,main_sizer_orientation=wx.VERTICAL)
+        self.radius_label=wx.StaticText(self,label='Radius:')
+        self.radius_control=wx.SpinCtrl(self,value='1')
+        self.radius_sizer=wx.BoxSizer()
+        self.radius_sizer.Add(self.radius_label,1,wx.EXPAND)
+        self.radius_sizer.Add(self.radius_control,1,wx.EXPAND)
+        self.main_sizer.Add(self.radius_sizer,0,wx.EXPAND)
+        self.notation_type_control=wx.RadioBox(self,choices=['None','Cube','Axial'])
+        self.main_sizer.Add(self.notation_type_control,0,wx.EXPAND)
+        self.selected_tile_control_panel=SelectedTileControlPanel(self)
+        self.main_sizer.Add(self.selected_tile_control_panel,0,wx.EXPAND)
 #    def init(self,hexmap,lock):
 #        self.hexmap=hexmap
 #        self.lock=lock
@@ -346,19 +364,12 @@ class MainFrame(Frame):
     def __init__(self,events,title="Hexmap Demo"):
         Frame.__init__(self,events,title)
         self.CreateStatusBar()
-        self.main_panel=Panel(self)
-        self.main_sizer.Add(self.main_panel,1,wx.EXPAND)
-#        self.hexmap_control_panel=HexMapControlPanel(self)
-#        self.render_panel=RenderPanel(self)
-#        self.main_sizer=wx.BoxSizer(orient=wx.VERTICAL)
-#        self.inner_sizer=wx.BoxSizer()
-#        self.toolbar=wx.ToolBar(self)
-#        self.main_sizer.Add(self.toolbar,0,wx.EXPAND)
-#        self.main_sizer.Add(self.inner_sizer,1,wx.EXPAND)
-#        self.inner_sizer.Add(self.hexmap_control_panel,0,wx.EXPAND)
-#        self.inner_sizer.Add(self.render_panel,1,wx.EXPAND)
-#        self.SetSizer(self.main_sizer)
-#        self.Show(True)
+        self.hexmap_control_panel=HexMapControlPanel(self)
+        self.render_panel=RenderPanel(self)
+        self.inner_sizer=wx.BoxSizer()
+        self.main_sizer.Add(self.inner_sizer,1,wx.EXPAND)
+        self.inner_sizer.Add(self.hexmap_control_panel,0,wx.EXPAND)
+        self.inner_sizer.Add(self.render_panel,1,wx.EXPAND)
 #    def init(self,hexmap,lock):
 #        self.hexmap=hexmap
 #        self.lock=lock
@@ -369,8 +380,8 @@ class App(BaseApp):
         BaseApp.__init__(self)
         self.radius=1
         self.hexmap=RadialMap(self.radius)
-        self.events.AddEvent()
-        self.main_frame=MainFrame()
+        #self.events.AddEvent()#
+        self.main_frame=MainFrame(self.events)
     def Initialise(self,event):
         self.main_frame.Show(True)
         self.MainLoop()
@@ -434,5 +445,6 @@ class App(BaseApp):
 #        self.main_frame.render_panel.axis_bitmap.SetMode(choice)
 if __name__=='__main__':
     mp.freeze_support()
-    app=TestApp()
+    app=App()
     app.events.CallEvent(InitialiseEvent())
+exit()

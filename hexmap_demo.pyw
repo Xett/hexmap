@@ -583,15 +583,6 @@ class MapRenderPanel(RenderPanel):
         self.axis_bitmap.SetMode(choice)
         self.hexmap_text_bitmap.UpdateBitmap()
         self.UpdateDrawing()
-    def wxOnSize(self,event):
-        self.hexmap_layer_1_bitmap.OnSize()
-        self.hexmap_layer_2_bitmap.OnSize()
-        self.hexmap_layer_3_bitmap.OnSize()
-        self.selected_tile_bitmap.OnSize()
-        self.hovered_tile_bitmap.OnSize()
-        self.hexmap_text_bitmap.OnSize()
-        self.axis_bitmap.OnSize()
-        RenderPanel.wxOnSize(self,event)
 class MainFrame(Frame):
     def __init__(self,events,title="Hexmap Demo"):
         Frame.__init__(self,events,title)

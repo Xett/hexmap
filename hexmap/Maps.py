@@ -13,8 +13,9 @@ class Tile:
     def distance_from_tile_pass(self,tile):
         return (abs(self.x-tile.x)+abs(self.y-tile.y)+abs(self.z-tile.z))/2
 class HexMap:
-    def __init__(self):
+    def __init__(self,tile_class=Tile):
         self.tiles={}
+        self.tile_class=tile_class
     def __getitem__(self,key):
         if key.__class__.__name__=='Cube':
             try:
@@ -73,14 +74,14 @@ class HexMap:
         elif key.__class__.__name__=='EvenColumnAxial':
             del self.tiles[(key.toCube().x,key.toCube().z)]
     def addTile(self,x,y,z):
-        tile=Tile(x,y,z)
+        tile=self.tile_class(x,y,z)
         self[Cube(x,y,z)]=tile
     @property
     def length(self):
         return len(self.tiles)
 class RadialMap(HexMap):
-    def __init__(self,radius):
-        super().__init__()
+    def __init__(self,radius,tile_class=Tile):
+        super().__init__(tile_class)
         self.radius=radius
         self.populateMap(self.radius)
     def populateMap(self,radius):

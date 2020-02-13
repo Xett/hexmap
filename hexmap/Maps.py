@@ -6,8 +6,6 @@ class Tile:
         self.x=x
         self.y=y
         self.z=z
-        self.movement_cost=1
-        self.isPassable=True
     def distance_from_center_pass(self):
         return (abs(self.x-0)+abs(self.y-0)+abs(self.z-0))/2
     def distance_from_tile_pass(self,tile):

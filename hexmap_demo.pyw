@@ -11,6 +11,7 @@ from hexmap import Iterators
 from hexmap.Coords import Cube
 from hexmap.Coords import Axial
 from hexmap.Maps import RadialMap
+from hexmap.Maps import Tile as TileBase
 NOTATION_TYPE_CONTROL_CHOICE_CHANGED_EVENT='Notation-Type-Control-Choice-Changed-Event'
 SELECTED_TILE_TYPE_CONTROL_CHOICE_CHANGED_EVENT='Selected-Tile-Type-Control-Choice-Changed-Event'
 RADIUS_SPIN_CONTROL_CHANGE_EVENT='Radius-Spin-Control-Change-Event'
@@ -21,6 +22,11 @@ def pixel_to_hex(point):
     q=((2./3)*point[0])/100
     r=(((-1./3)*point[0])+(np.sqrt(3)/3)*point[1])/100
     return round(Axial(q,r).toCube())
+class Tile(TileBase):
+    def __init__(self,x,y,z):
+        TileBase.__init__(self,x,y,z)
+        self.movement_cost=1
+        self.isPassable=True
 class NotationTypeControlChoiceChangedEvent(Event):
     def __init__(self,notation_type_control_id,map_render_panel_id):
         Event.__init__(self,NOTATION_TYPE_CONTROL_CHOICE_CHANGED_EVENT,self.resfunc)
@@ -600,7 +606,7 @@ class App(BaseApp):
         BaseApp.__init__(self)
         self.radius=1
         self.events.BindData('Hexmap-Radius',self.radius)
-        self.hexmap=RadialMap(self.radius)
+        self.hexmap=RadialMap(self.radius,tile_class=Tile)
         self.events.BindData('Hexmap',self.hexmap)
         self.main_frame=MainFrame(self.events)
         self.events.Bind(NOTATION_TYPE_CONTROL_CHOICE_CHANGED_EVENT,self.NotationTypeControlChoiceChanged)

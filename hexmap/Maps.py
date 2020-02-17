@@ -96,8 +96,8 @@ class RadialMap(HexMap):
             for x,y,z in iterator:
                 self.addTile(x,y,z)
         self.radius=radius
-class SquareMap(Hexmap):
-    def __init__(self,tile_class=Tile):
+class SquareMap(HexMap):
+    def __init__(self,width,height,tile_class=Tile):
         super().__init__(tile_class)
         self.width=width
         self.height=height

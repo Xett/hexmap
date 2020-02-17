@@ -96,3 +96,13 @@ class RadialMap(HexMap):
             for x,y,z in iterator:
                 self.addTile(x,y,z)
         self.radius=radius
+class SquareMap(Hexmap):
+    def __init__(self,tile_class=Tile):
+        super().__init__(tile_class)
+        self.width=width
+        self.height=height
+        self.populateMap(self.width,self.height)
+    def populateMap(self,width,height):
+        for x in range(width):
+            for y in range(height):
+                self.addTile(Axial(x,y).toCube())

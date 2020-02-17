@@ -1,3 +1,5 @@
+from hexmap.Coords import Cube
+from hexmap.Coords import Axial
 class RingIterator:
     def __init__(self,radius,ring_step):
         self.radius=radius
@@ -66,4 +68,5 @@ class HexmapIterator:
             raise StopIteration
         else:
             self.index+=1
-            return list(range(self.index%self.height))
+            cube=Axial(self.index%self.height,int(self.index//self.height)).toCube()
+            return cube.x,cube.y,cube.z

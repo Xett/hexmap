@@ -53,3 +53,17 @@ class RingIterator:
             current_ring+=1
             index_counter-=(current_ring-1)*self.ring_step
         return current_ring
+class HexmapIterator:
+    def __init__(self,width,height):
+        self.width=width
+        self.height=height
+        self.length=(self.width*self.height)-1
+        self.index=-1
+    def __iter__(self):
+        return self
+    def __next__(self):
+        if self.index==self.length:
+            raise StopIteration
+        else:
+            self.index+=1
+            return list(range(self.index%self.height))

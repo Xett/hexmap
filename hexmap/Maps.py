@@ -105,4 +105,5 @@ class SquareMap(HexMap):
     def populateMap(self,width,height):
         for x in range(width):
             for y in range(height):
-                self.addTile(Axial(x,y).toCube())
+                coord=Axial(x,y).toCube()
+                self.addTile(coord.x,coord.y,coord.z)
